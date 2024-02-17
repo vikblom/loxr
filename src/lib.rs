@@ -6,6 +6,7 @@ mod chunk;
 #[repr(u8)]
 pub enum Opcode {
     Return,
+    Constant,
 }
 
 impl TryFrom<u8> for Opcode {
@@ -14,6 +15,7 @@ impl TryFrom<u8> for Opcode {
         match u {
             // Nice...
             x if x == Opcode::Return as u8 => Ok(Opcode::Return),
+            x if x == Opcode::Constant as u8 => Ok(Opcode::Constant),
             _ => Err(()),
         }
     }
@@ -36,4 +38,9 @@ mod tests {
         println!("{:?}", Opcode::Return as u8);
         println!("{:?}", Opcode::try_from(1u8));
     }
+}
+
+#[derive(Debug)]
+enum Values {
+    Double(f64),
 }
