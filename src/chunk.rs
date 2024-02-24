@@ -1,5 +1,7 @@
-use std::io::{Error, Write};
+use std::io::Write;
 use std::vec::Vec;
+
+use anyhow::{anyhow, Result};
 
 use crate::Values;
 
@@ -39,7 +41,7 @@ impl Chunk {
         self.lines.push(line);
     }
 
-    fn disassemble(&self, w: &mut impl Write) -> Result<(), Error> {
+    fn disassemble(&self, w: &mut impl Write) -> Result<()> {
         writeln!(w, "== {} ==", self.name)?;
 
         let mut offset = 0;
@@ -49,7 +51,7 @@ impl Chunk {
         Ok(())
     }
 
-    fn disassemble_instruction(&self, w: &mut impl Write, offset: usize) -> Result<usize, Error> {
+    fn disassemble_instruction(&self, w: &mut impl Write, offset: usize) -> Result<usize> {
         write!(w, "{:04} ", offset)?;
         if offset > 0 && self.lines[offset] == self.lines[offset - 1] {
             write!(w, "   | ")?;
@@ -73,31 +75,26 @@ impl Chunk {
         }
     }
 
-    fn simple_instruction(
-        &self,
-        w: &mut impl Write,
-        name: &str,
-        offset: usize,
-    ) -> Result<usize, Error> {
+    fn simple_instruction(&self, w: &mut impl Write, name: &str, offset: usize) -> Result<usize> {
         writeln!(w, "{}", name)?;
         Ok(offset + 1)
     }
 
-    fn const_instruction(
-        &self,
-        w: &mut impl Write,
-        name: &str,
-        offset: usize,
-    ) -> Result<usize, Error> {
-        let idx = self.code.get(offset + 1).unwrap();
+    fn const_instruction(&self, w: &mut impl Write, name: &str, offset: usize) -> Result<usize> {
+        let idx = self.code.get(offset + 1).ok_or(anyhow!("no item"))?;
         write!(w, "{} {:03} ", name, idx)?;
-        write_value(w, self.constants.get(*idx as usize).unwrap())?;
+        write_value(
+            w,
+            self.constants
+                .get(*idx as usize)
+                .ok_or(anyhow!("no item"))?,
+        )?;
         writeln!(w, "")?;
         Ok(offset + 2)
     }
 }
 
-fn write_value(w: &mut impl Write, v: &super::Values) -> Result<(), Error> {
+fn write_value(w: &mut impl Write, v: &super::Values) -> Result<()> {
     match v {
         Values::Double(d) => {
             write!(w, "'{}'", d)?;
